@@ -20,7 +20,7 @@ var delimiters = map[rune]bool{
 	',': true,
 }
 
-func parseTokens(tokens []token, parent *token) ([]token, []TreeNode) {
+func parseTokens(tokens []token, parent *token) ([]token, Tree) {
 
 	tree := make(Tree, 0)
 

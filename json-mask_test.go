@@ -4,75 +4,75 @@ import "testing"
 import "reflect"
 
 var patterns = map[string]Tree{
-	"a": []TreeNode{
+	"a": Tree{
 		TreeNode{
 			Field:  "a",
-			Childs: []TreeNode{},
+			Childs: Tree{},
 		},
 	},
-	"a,b": []TreeNode{
+	"a,b": Tree{
 		TreeNode{
 			Field:  "a",
-			Childs: []TreeNode{},
+			Childs: Tree{},
 		},
 		TreeNode{
 			Field:  "b",
-			Childs: []TreeNode{},
+			Childs: Tree{},
 		},
 	},
-	"a/b": []TreeNode{
+	"a/b": Tree{
 		TreeNode{
 			Field: "a",
-			Childs: []TreeNode{
+			Childs: Tree{
 				TreeNode{
 					Field:  "b",
-					Childs: []TreeNode{},
+					Childs: Tree{},
 				},
 			},
 		},
 	},
-	"a(b,c)": []TreeNode{
+	"a(b,c)": Tree{
 		TreeNode{
 			Field: "a",
-			Childs: []TreeNode{
+			Childs: Tree{
 				TreeNode{
 					Field:  "b",
-					Childs: []TreeNode{},
+					Childs: Tree{},
 				},
 				TreeNode{
 					Field:  "c",
-					Childs: []TreeNode{},
+					Childs: Tree{},
 				},
 			},
 		},
 	},
-	"a,b/c,d(e,f/g)": []TreeNode{
+	"a,b/c,d(e,f/g)": Tree{
 		TreeNode{
 			Field:  "a",
-			Childs: []TreeNode{},
+			Childs: Tree{},
 		},
 		TreeNode{
 			Field: "b",
-			Childs: []TreeNode{
+			Childs: Tree{
 				TreeNode{
 					Field:  "c",
-					Childs: []TreeNode{},
+					Childs: Tree{},
 				},
 			},
 		},
 		TreeNode{
 			Field: "d",
-			Childs: []TreeNode{
+			Childs: Tree{
 				TreeNode{
 					Field:  "e",
-					Childs: []TreeNode{},
+					Childs: Tree{},
 				},
 				TreeNode{
 					Field: "f",
-					Childs: []TreeNode{
+					Childs: Tree{
 						TreeNode{
 							Field:  "g",
-							Childs: []TreeNode{},
+							Childs: Tree{},
 						},
 					},
 				},
