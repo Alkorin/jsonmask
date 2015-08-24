@@ -4,6 +4,7 @@ import "testing"
 import "reflect"
 
 var patterns = map[string]Tree{
+	"": Tree{},
 	"a": Tree{
 		TreeNode{
 			Field:  "a",
@@ -79,29 +80,59 @@ var patterns = map[string]Tree{
 			},
 		},
 	},
+	// Some invalid patterns
+	",":         nil,
+	"(":         nil,
+	")":         nil,
+	"/":         nil,
+	"a,":        nil,
+	"a,,":       nil,
+	"a))":       nil,
+	"a(":        nil,
+	"a/":        nil,
+	"a/(":       nil,
+	"a((":       nil,
+	"a,,b":      nil,
+	"(a,b)":     nil,
+	"a(b,c//d)": nil,
 }
 
 func TestPatterns(t *testing.T) {
 
 	for pattern, wanted := range patterns {
 
-		tree := Parse(pattern)
+		tree, err := Parse(pattern)
+
+		if wanted == nil && (tree != nil || err == nil) {
+			t.Errorf(`Error while parsing %q, got tree=%+v, error=%+v instead of nil, error`, pattern, tree, err)
+			continue
+		}
 
 		if reflect.DeepEqual(tree, wanted) == false {
 			t.Errorf(`Error while parsing %q, got %+v instead of %+v`, pattern, tree, wanted)
+			continue
 		}
-
 	}
 }
 
-func TestInvalidTokens(t *testing.T) {
+func TestOneInvalidTokens(t *testing.T) {
 
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf(`Should have paniced with invalid token`)
-		}
-	}()
+	// This should return an error
+	tree, err := parseTokens([]token{token{tag: 'I'}})
 
-	// This should die
-	parseTokens([]token{token{tag: 'I'}}, nil)
+	if tree != nil || err == nil {
+		t.Errorf(`Should have returned error with invalid token`)
+	}
+
+}
+
+func TestDeepInvalidTokens(t *testing.T) {
+
+	// This should return an error
+	tree, err := parseTokens([]token{token{tag: 'S', value: "foo"}, token{tag: 'I'}})
+
+	if tree != nil || err == nil {
+		t.Errorf(`Should have returned error with invalid token`)
+	}
+
 }

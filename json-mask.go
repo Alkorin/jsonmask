@@ -1,5 +1,7 @@
 package jsonmask
 
+import "fmt"
+
 type Tree []TreeNode
 
 type TreeNode struct {
@@ -20,11 +22,13 @@ var delimiters = map[rune]bool{
 	',': true,
 }
 
-func parseTokens(tokens []token, parent *token) ([]token, Tree) {
+func _parseTokens(tokens []token, parent *token, deep int) ([]token, Tree, error) {
 
 	tree := make(Tree, 0)
 
+TokenLoop:
 	for len(tokens) != 0 {
+		var err error
 		t := tokens[0]
 		tokens = tokens[1:]
 
@@ -32,37 +36,89 @@ func parseTokens(tokens []token, parent *token) ([]token, Tree) {
 		case 'S':
 			var childs Tree
 
-			tokens, childs = parseTokens(tokens, &t)
+			tokens, childs, err = _parseTokens(tokens, &t, deep)
+
+			if err != nil {
+				return nil, nil, err
+			}
 
 			tree = append(tree, TreeNode{Field: t.value, Childs: childs})
 
 			if parent != nil && parent.tag == '/' {
 				// return if parent element was a /
-				return tokens, tree
+				break TokenLoop
 			}
 
 		case '/':
-			return parseTokens(tokens, &t)
+			if parent == nil || parent.tag != 'S' {
+				// Error: invalid parents
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+
+			tokens, tree, err = _parseTokens(tokens, &t, deep)
+
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(tree) == 0 {
+				// Error: no childs
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+
+			break TokenLoop
 
 		case '(':
-			return parseTokens(tokens, &t)
+			if parent == nil || parent.tag != 'S' {
+				// Error: invalid parents
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+
+			tokens, tree, err = _parseTokens(tokens, &t, deep+1)
+
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(tree) == 0 {
+				// Error: invalid childs
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+
+			break TokenLoop
 
 		case ')':
-			return tokens, tree
+			if deep == 0 {
+				// Error: parentheses are not balanced
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+			break TokenLoop
 
 		case ',':
-			return tokens, tree
+			if parent == nil || parent.tag == ',' || parent.tag == '/' {
+				// Error: invalid parents
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+			if len(tokens) == 0 {
+				// Error: nothing more to parse
+				return nil, nil, fmt.Errorf("error while parsing")
+			}
+			break TokenLoop
 
 		default:
-			panic("Should not happend")
+			return nil, nil, fmt.Errorf("error while parsing")
 
 		}
 	}
 
-	return tokens, tree
+	return tokens, tree, nil
 }
 
-func Parse(s string) Tree {
+func parseTokens(tokens []token) (Tree, error) {
+
+	_, tree, err := _parseTokens(tokens, nil, 0)
+	return tree, err
+}
+
+func Parse(s string) (Tree, error) {
 
 	tokens := make([]token, 0)
 	name := make([]rune, 0)
@@ -86,7 +142,5 @@ func Parse(s string) Tree {
 	}
 
 	// Second step, parse tokens
-	_, tree := parseTokens(tokens, nil)
-
-	return tree
+	return parseTokens(tokens)
 }
