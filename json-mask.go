@@ -24,7 +24,7 @@ var delimiters = map[rune]bool{
 
 func parseTokens(tokens []token) (Tree, error) {
 
-    // Parenthesis counter
+	// Parenthesis counter
 	deep := 0
 
 	var _parseTokens func(parent *token) (Tree, error)
@@ -32,7 +32,7 @@ func parseTokens(tokens []token) (Tree, error) {
 
 		tree := make(Tree, 0)
 
-		for len(tokens) != 0 {
+		for len(tokens) > 0 {
 			var err error
 			t := tokens[0]
 			tokens = tokens[1:]
@@ -92,15 +92,24 @@ func parseTokens(tokens []token) (Tree, error) {
 				return tree, nil
 
 			case ')':
+				if parent == nil || parent.tag == ',' || parent.tag == '/' || parent.tag == '(' {
+					// Error: invalid parents
+					return nil, fmt.Errorf("error while parsing")
+				}
 				if deep == 0 {
 					// Error: parentheses are not balanced
 					return nil, fmt.Errorf("error while parsing")
+				}
+				if len(tokens) > 0 && tokens[0].tag == 'S' {
+					// Error: no childs
+					return nil, fmt.Errorf("error while parsing")
+
 				}
 				deep--
 				return tree, nil
 
 			case ',':
-				if parent == nil || parent.tag == ',' || parent.tag == '/' {
+				if parent == nil || parent.tag == ',' || parent.tag == '/' || parent.tag == '(' {
 					// Error: invalid parents
 					return nil, fmt.Errorf("error while parsing")
 				}

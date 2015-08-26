@@ -94,8 +94,12 @@ var patterns = map[string]Tree{
 	"a(b":       nil,
 	"a((":       nil,
 	"a,,b":      nil,
+	"a(b,)":     nil,
+	"a(b,,)":    nil,
+	"a(b,,c)":   nil,
 	"(a,b)":     nil,
 	"a(b,c//d)": nil,
+	"a(b)c":     nil,
 }
 
 func TestPatterns(t *testing.T) {
