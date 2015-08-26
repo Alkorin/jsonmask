@@ -91,6 +91,7 @@ var patterns = map[string]Tree{
 	"a(":        nil,
 	"a/":        nil,
 	"a/(":       nil,
+	"a(b":       nil,
 	"a((":       nil,
 	"a,,b":      nil,
 	"(a,b)":     nil,

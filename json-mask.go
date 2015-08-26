@@ -22,99 +22,110 @@ var delimiters = map[rune]bool{
 	',': true,
 }
 
-func _parseTokens(tokens []token, parent *token, deep int) ([]token, Tree, error) {
-
-	tree := make(Tree, 0)
-
-TokenLoop:
-	for len(tokens) != 0 {
-		var err error
-		t := tokens[0]
-		tokens = tokens[1:]
-
-		switch t.tag {
-		case 'S':
-			var childs Tree
-
-			tokens, childs, err = _parseTokens(tokens, &t, deep)
-
-			if err != nil {
-				return nil, nil, err
-			}
-
-			tree = append(tree, TreeNode{Field: t.value, Childs: childs})
-
-			if parent != nil && parent.tag == '/' {
-				// return if parent element was a /
-				break TokenLoop
-			}
-
-		case '/':
-			if parent == nil || parent.tag != 'S' {
-				// Error: invalid parents
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-
-			tokens, tree, err = _parseTokens(tokens, &t, deep)
-
-			if err != nil {
-				return nil, nil, err
-			}
-			if len(tree) == 0 {
-				// Error: no childs
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-
-			break TokenLoop
-
-		case '(':
-			if parent == nil || parent.tag != 'S' {
-				// Error: invalid parents
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-
-			tokens, tree, err = _parseTokens(tokens, &t, deep+1)
-
-			if err != nil {
-				return nil, nil, err
-			}
-			if len(tree) == 0 {
-				// Error: invalid childs
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-
-			break TokenLoop
-
-		case ')':
-			if deep == 0 {
-				// Error: parentheses are not balanced
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-			break TokenLoop
-
-		case ',':
-			if parent == nil || parent.tag == ',' || parent.tag == '/' {
-				// Error: invalid parents
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-			if len(tokens) == 0 {
-				// Error: nothing more to parse
-				return nil, nil, fmt.Errorf("error while parsing")
-			}
-			break TokenLoop
-
-		default:
-			return nil, nil, fmt.Errorf("error while parsing")
-
-		}
-	}
-
-	return tokens, tree, nil
-}
-
 func parseTokens(tokens []token) (Tree, error) {
 
-	_, tree, err := _parseTokens(tokens, nil, 0)
+    // Parenthesis counter
+	deep := 0
+
+	var _parseTokens func(parent *token) (Tree, error)
+	_parseTokens = func(parent *token) (Tree, error) {
+
+		tree := make(Tree, 0)
+
+		for len(tokens) != 0 {
+			var err error
+			t := tokens[0]
+			tokens = tokens[1:]
+
+			switch t.tag {
+			case 'S':
+				var childs Tree
+
+				childs, err = _parseTokens(&t)
+
+				if err != nil {
+					return nil, err
+				}
+
+				tree = append(tree, TreeNode{Field: t.value, Childs: childs})
+
+				if parent != nil && parent.tag == '/' {
+					// return if parent element was a /
+					return tree, nil
+				}
+
+			case '/':
+				if parent == nil || parent.tag != 'S' {
+					// Error: invalid parents
+					return nil, fmt.Errorf("error while parsing")
+				}
+
+				tree, err = _parseTokens(&t)
+
+				if err != nil {
+					return nil, err
+				}
+				if len(tree) == 0 {
+					// Error: no childs
+					return nil, fmt.Errorf("error while parsing")
+				}
+
+				return tree, nil
+
+			case '(':
+				if parent == nil || parent.tag != 'S' {
+					// Error: invalid parents
+					return nil, fmt.Errorf("error while parsing")
+				}
+
+				deep++
+				tree, err = _parseTokens(&t)
+
+				if err != nil {
+					return nil, err
+				}
+				if len(tree) == 0 {
+					// Error: invalid childs
+					return nil, fmt.Errorf("error while parsing")
+				}
+
+				return tree, nil
+
+			case ')':
+				if deep == 0 {
+					// Error: parentheses are not balanced
+					return nil, fmt.Errorf("error while parsing")
+				}
+				deep--
+				return tree, nil
+
+			case ',':
+				if parent == nil || parent.tag == ',' || parent.tag == '/' {
+					// Error: invalid parents
+					return nil, fmt.Errorf("error while parsing")
+				}
+				if len(tokens) == 0 {
+					// Error: nothing more to parse
+					return nil, fmt.Errorf("error while parsing")
+				}
+				return tree, nil
+
+			default:
+				return nil, fmt.Errorf("error while parsing")
+
+			}
+		}
+
+		return tree, nil
+	}
+
+	tree, err := _parseTokens(nil)
+
+	if deep != 0 {
+		// Error: parentheses are not balanced
+		return nil, fmt.Errorf("error while parsing")
+	}
+
 	return tree, err
 }
 
