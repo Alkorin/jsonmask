@@ -1,7 +1,11 @@
 package jsonmask
 
+import "flag"
+import "math/rand"
 import "testing"
 import "reflect"
+
+var fuzzCount = flag.Uint("test.fuzz", 0, "define fuzzing loop count")
 
 var patterns = map[string]Tree{
 	"": Tree{},
@@ -138,6 +142,37 @@ func TestDeepInvalidTokens(t *testing.T) {
 
 	if tree != nil || err == nil {
 		t.Errorf(`Should have returned error with invalid token`)
+	}
+
+}
+
+func TestFuzzing(t *testing.T) {
+
+	count := *fuzzCount
+
+	if count == 0 {
+		t.Skip("Fuzzing test skipped")
+	}
+
+	// Valid tokens
+	var runes = []rune("a()/,")
+
+	for count > 0 {
+		// Random size [4,16)
+		size := 4 + rand.Int31n(12)
+
+		s := make([]rune, size)
+		for i := range s {
+			s[i] = runes[rand.Intn(len(runes))]
+		}
+
+		tree, err := Parse(string(s))
+
+		if err == nil {
+			t.Errorf("Found a random valid pattern %q, got %+v", string(s), tree)
+		}
+
+		count--
 	}
 
 }
